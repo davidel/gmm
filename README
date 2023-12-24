@@ -1,0 +1,45 @@
+
+The Guarded Memory Move tool gets handy when you have to study buffer
+overflows and you need to catch them together with a "good" stack
+image. When a stack overflow has been exploited, the back trace is
+already gone together with good information about parameters and
+local variables, that are of vital importance when trying to understand
+how the attacker is trying to work out the exploit. The GMM library
+uses dynamic function call interception to catch the most common functions
+that are used by attackers to exploit stack buffers. The GMM library
+uses the LD_PRELOAD capability and offers two services to the user.
+First of all, it avoids buffer overflow to allow the attacker to execute
+shell-code on your machine. Second, in case where an exploit is detected,
+the stack content is saved an a segmentation fault is triggered. The
+resulting core dump will then have all the necessary information to
+debug the exploit and fix the software. For the GMM library to work, the
+software should be compiled with frame pointers (that is gcc default) and
+for the stack dump to be useful, debugging information should be included
+inside the binary (gcc -g). There is a little performance regression in
+using this library, but it should not impact at all the normal use of
+the executable. And, when you are hunting for exploits, you don't really
+care about performance. To use the library, you first have to build it:
+
+$ ./configure (put eventual configure parameters here)
+$ make
+# make install
+
+To use the library you have to add it to the LD_PRELOAD in your enviroment
+(or put it on the same command line you're using to run the binary). Example:
+
+$ LD_PRELOAD=/usr/local/lib/libgmm.so XXXX ...
+
+where XXXX is the path of the binary you want to monitor. You might want
+to be sure that your core dump limit is not set to zero by issuing:
+
+$ ulimit -c NNNN
+
+where NNNN is the maximum size of the core dump in Kb.
+
+
+
+Happy Hunting,
+
+                           Davide
+
+

@@ -1,0 +1,334 @@
+<!DOCTYPE doctype PUBLIC "-//w3c//dtd html 4.0 transitional//en">
+<html>
+<head>
+  <meta http-equiv="Content-Type"
+ content="text/html; charset=windows-1252">
+  <meta name="Author" content="Davide Libenzi">
+  <meta name="Description" content="Guarded Memory Move (GMM) Home Page">
+  <meta name="GENERATOR" content="Emacs">
+  <meta name="Keywords"
+ content="buffer,overflow,debug,exploit,shell code,stack,check,unix">
+  <meta name="ProgId" content="FrontPage.Editor.Document">
+  <title>Guarded Memory Move (GMM) Home Page</title>
+</head>
+<body
+ style="color: rgb(0, 0, 255); background-color: rgb(255, 255, 255);">
+<p style="font-family: monospace;" align="center"><b>Guarded
+Memory Move (GMM) Home Page</b><br>
+</p>
+<font style="font-family: monospace;"><br>
+<br>
+The Guarded Memory Move tool gets
+handy when you have to study buffer
+overflows and you need to catch them together with a "good" stack
+image.
+When a stack overflow has been exploited, the back trace is already
+gone
+together with good information about parameters and local variables,
+that are of vital importance when trying to understand how the attacker
+is trying to work out the exploit. The <span style="font-weight: bold;">GMM</span>
+library uses dynamic function call interception to catch the most
+common
+functions that are used by attackers to exploit stack buffers. The <span
+ style="font-weight: bold;">GMM</span> library uses the <span
+ style="font-style: italic;">LD_PRELOAD</span> capability and offers
+two
+services to the user. First of all, it avoids buffer overflow to allow
+the attacker to execute shell-code on your machine. Second, in case
+where an exploit is detected, the stack content is saved and a
+segmentation fault is triggered. The resulting core dump will then have
+all the necessary information to debug the exploit and fix the
+software.
+Internally, the library insert itself between the application and the <a
+ href="http://www.gnu.org/software/libc/libc.html">glibc</a> library
+and
+intercept functions that might lead to buffer overflow exploits. Before
+calling the <a href="http://www.gnu.org/software/libc/libc.html">glibc</a>
+core function, the <span style="font-weight: bold;">GMM</span> layer
+saves part of the stack frame above the caller to a temporary location
+in its frame. It also stores the previous three return addresses in its
+local storage before calling the&nbsp;<a
+ href="http://www.gnu.org/software/libc/libc.html">glibc</a> core
+function. When the core function returns, the <span
+ style="font-weight: bold;">GMM</span> code samples again the
+previously
+recorded return addresses and, if they differ, it restores the
+previously saved stack frame and issue a segmentation fault. This with
+a <span style="font-weight: bold;">clean
+stack frame</span>, so that
+it can be
+inspected with a debugger. While other solutions exist to detect buffer
+overflow exploits, like for example <a
+ href="http://www.immunix.com/technology/compiler.php">StackGuard</a>
+and <a href="http://www.angelfire.com/sk/stackshield/">StackShield</a>,
+those
+differs from <span style="font-weight: bold;">GMM</span> in many ways.
+They live as <a href="http://gcc.gnu.org/">gcc</a> patches and do
+require you to rebuild your application to use their functionalities.
+The good of this approach is that every single function is protected
+against buffer overflows. The bad of this solution is that every single
+function is protected against buffer overflows. That is, performance
+regression on the whole application, even if this is not really a huge
+problem when hunting for buffer overflows. Another solution similar to <span
+ style="font-weight: bold;">GMM</span> is <a
+ href="http://www.research.avayalabs.com/project/libsafe/">LibSafe</a>,
+but it does not save and restore the stack frame by making it unusable
+for debugging. But let's see how <span style="font-weight: bold;">GMM</span>
+differs from the above listed solutions. First of all, <span
+ style="font-weight: bold;">GMM</span> works everywhere there are stack
+frames and the <a href="http://gcc.gnu.org/">gcc</a>
+and <a href="http://www.gnu.org/software/libc/libc.html">glibc</a>
+duo. That
+means that it is not limited to i386 only. And now the real reason for
+the <span style="font-weight: bold;">GMM</span> existence. This is how
+it will look like a stack frame when a buffer overflow is detected with
+any debugger or the above solutions:<br>
+<br>
+<span style="font-style: italic;">[davide@bigblue
+test]$ gdb -c
+core.14600 gmm-test</span><br style="font-style: italic;">
+<span style="font-style: italic;">GNU gdb Red
+Hat Linux
+(5.3post-0.20021129.18rh)</span><br style="font-style: italic;">
+<span style="font-style: italic;">Copyright
+2003 Free Software
+Foundation, Inc.</span><br style="font-style: italic;">
+<span style="font-style: italic;">GDB is free
+software, covered by the
+GNU General Public License, and you are</span><br
+ style="font-style: italic;">
+<span style="font-style: italic;">welcome to
+change it and/or
+distribute copies of it under certain conditions.</span><br
+ style="font-style: italic;">
+<span style="font-style: italic;">Type "show
+copying" to see the
+conditions.</span><br style="font-style: italic;">
+<span style="font-style: italic;">There is
+absolutely no warranty for
+GDB.&nbsp; Type "show warranty" for details.</span><br
+ style="font-style: italic;">
+<span style="font-style: italic;">This GDB was
+configured as
+"i386-redhat-linux-gnu"...</span><br style="font-style: italic;">
+<span style="font-style: italic;">Core was
+generated by `./gmm-test
+uiyueiwyeowyreoywoeywoewoyrowuruowyeouwyeoqwyeowyeoyruowuoewueywewou'.</span><br
+ style="font-style: italic;">
+<span style="font-style: italic;">Program
+terminated with signal 11,
+Segmentation fault.</span><br style="font-style: italic;">
+<span style="font-style: italic;">Reading
+symbols from
+/lib/libc.so.6...done.</span><br style="font-style: italic;">
+<span style="font-style: italic;">Loaded
+symbols for /lib/libc.so.6</span><br style="font-style: italic;">
+<span style="font-style: italic;">Reading
+symbols from
+/lib/ld-linux.so.2...done.</span><br style="font-style: italic;">
+<span style="font-style: italic;">Loaded
+symbols for /lib/ld-linux.so.2</span><br style="font-style: italic;">
+<span style="font-style: italic;">#0&nbsp;
+0x776f6579 in ?? ()</span><br style="font-style: italic;">
+<span style="font-style: italic;">(gdb) bt</span><br
+ style="font-style: italic;">
+<span style="font-style: italic;">#0&nbsp;
+0x776f6579 in ?? ()</span><br style="font-style: italic;">
+<span style="font-style: italic;">Cannot access
+memory at address
+0x77716f65</span><br style="font-style: italic;">
+<span style="font-style: italic;">(gdb)</span><br>
+<br>
+This buffer overflow is generated
+using the test application available
+inside the <span style="font-style: italic;">test</span> directory of
+the distribution package. No much of useful information are there and
+no
+debugging is basically possible with the above information. Let's look
+at how the stack frame looks like when <span style="font-weight: bold;">GMM</span>
+is on the loop:<br>
+<br>
+<span style="font-style: italic;">[davide@bigblue
+test]$ gdb -c
+core.14604 gmm-test</span><br style="font-style: italic;">
+<span style="font-style: italic;">GNU gdb Red
+Hat Linux
+(5.3post-0.20021129.18rh)</span><br style="font-style: italic;">
+<span style="font-style: italic;">Copyright
+2003 Free Software
+Foundation, Inc.</span><br style="font-style: italic;">
+<span style="font-style: italic;">GDB is free
+software, covered by the
+GNU General Public License, and you are</span><br
+ style="font-style: italic;">
+<span style="font-style: italic;">welcome to
+change it and/or
+distribute copies of it under certain conditions.</span><br
+ style="font-style: italic;">
+<span style="font-style: italic;">Type "show
+copying" to see the
+conditions.</span><br style="font-style: italic;">
+<span style="font-style: italic;">There is
+absolutely no warranty for
+GDB.&nbsp; Type "show warranty" for details.</span><br
+ style="font-style: italic;">
+<span style="font-style: italic;">This GDB was
+configured as
+"i386-redhat-linux-gnu"...</span><br style="font-style: italic;">
+<span style="font-style: italic;">Core was
+generated by `./gmm-test
+uiyueiwyeowyreoywoeywoewoyrowuruowyeouwyeoqwyeowyeoyruowuoewueywewou'.</span><br
+ style="font-style: italic;">
+<span style="font-style: italic;">Program
+terminated with signal 11,
+Segmentation fault.</span><br style="font-style: italic;">
+<span style="font-style: italic;">Reading
+symbols from
+../gmm/.libs/libgmm.so...done.</span><br style="font-style: italic;">
+<span style="font-style: italic;">Loaded
+symbols for
+../gmm/.libs/libgmm.so</span><br style="font-style: italic;">
+<span style="font-style: italic;">Reading
+symbols from
+/lib/libc.so.6...done.</span><br style="font-style: italic;">
+<span style="font-style: italic;">Loaded
+symbols for /lib/libc.so.6</span><br style="font-style: italic;">
+<span style="font-style: italic;">Reading
+symbols from
+/lib/libdl.so.2...done.</span><br style="font-style: italic;">
+<span style="font-style: italic;">Loaded
+symbols for /lib/libdl.so.2</span><br style="font-style: italic;">
+<span style="font-style: italic;">Reading
+symbols from
+/lib/ld-linux.so.2...done.</span><br style="font-style: italic;">
+<span style="font-style: italic;">Loaded
+symbols for /lib/ld-linux.so.2</span><br style="font-style: italic;">
+<span style="font-style: italic;">#0&nbsp;
+0x400185d4 in sprintf
+(str=0xbffff840 "юб", fmt=0x8048464 "%s") at gmm.c:243</span><br
+ style="font-style: italic;">
+<span style="font-style: italic;">243&nbsp;&nbsp;&nbsp;&nbsp;
+WRAP_VFUNCTION(int, sprintf,
+(char *str, const char *fmt, ...), fmt, (str, fmt, args))</span><br
+ style="font-style: italic;">
+<span style="font-style: italic;">(gdb) bt</span><br
+ style="font-style: italic;">
+<span style="font-style: italic;">#0&nbsp;
+0x400185d4 in sprintf
+(str=0xbffff840 "юб", fmt=0x8048464 "%s") at gmm.c:243</span><br
+ style="font-style: italic;">
+<span style="font-style: italic;">#1&nbsp;
+0x08048376 in do_overflow
+(str=0xbffffa44
+"uiyueiwyeowyreoywoeywoewoyrowuruowyeouwyeoqwyeowyeoyruowuoewueywewouew")
+at gmm-test.c:33</span><br style="font-style: italic;">
+<span style="font-style: italic;">#2&nbsp;
+0x08048396 in run_test
+(str=0xbffffa44
+"uiyueiwyeowyreoywoeywoewoyrowuruowyeouwyeoqwyeowyeoyruowuoewueywewouew")
+at gmm-test.c:41</span><br style="font-style: italic;">
+<span style="font-style: italic;">#3&nbsp;
+0x080483b3 in main (argc=2,
+argv=0x390d) at gmm-test.c:51</span><br style="font-style: italic;">
+<span style="font-style: italic;">#4&nbsp;
+0x40043ab7 in
+__libc_start_main
+() from /lib/libc.so.6</span><br style="font-style: italic;">
+<span style="font-style: italic;">(gdb)</span><br>
+<br>
+A lot better, isn't it? The whole
+stack frame is preserved and
+debugging and inspection of function parameters and local variables is
+possible. This is the main reason that drove the <span
+ style="font-weight: bold;">GMM</span> development. It is possible to
+use the environment variable <span style="font-style: italic;">GMM_FAULT_EXEC</span>
+to specify the path of an executable to be run when a fault is
+detected.
+The executable will be run with only one parameter, that is the PID of
+the monitored process. The monitored process will be waiting the
+external process to complete before continuing the execution (that will
+lead to a segmentation fault). The <span style="font-style: italic;">GMM_FAULT_EXEC</span>
+can be used for many purposes. From sending an email notification up to
+for running a debugger to attach the faulting process. For the <span
+ style="font-weight: bold;">GMM</span> library to work, the software
+should be compiled with frame pointers (that is <a
+ href="http://gcc.gnu.org/">gcc</a> default) and for the stack dump to
+be useful, debugging information should be included inside the binary (<a
+ href="http://gcc.gnu.org/">gcc</a> -g). There is a little performance
+regression in using this library, but it should not impact at all the
+normal use of the executable. And, when you are hunting for exploits,
+you don't really care about performance. To use the library, you first
+have to build it:<br>
+<br>
+$ <span style="font-style: italic;">./configure (put
+eventual
+configure parameters here)</span><br>
+$ <span style="font-style: italic;">make</span><br>
+# <span style="font-style: italic;">make install</span><br>
+<br>
+To use the library you have to
+add it to the <span style="font-style: italic;">LD_PRELOAD</span> in
+your enviroment (or
+put it on the same command line you're using to run the binary).
+Example:<br>
+<br>
+$ <span style="font-style: italic;">LD_PRELOAD=/usr/local/lib/libgmm.so
+XXXX ...</span><br>
+<br>
+where XXXX is the path of the
+binary you want to monitor. You might
+want to be sure that your core dump limit is not set to zero by issuing:<br>
+<br>
+$ <span style="font-style: italic;">ulimit -c NNNN</span><br>
+<br>
+where <span style="font-style: italic;">NNNN</span> is the maximum
+size
+of the core dump in Kb.<br>
+<br>
+</font>
+<div style="text-align: center; font-family: monospace;"><span
+ style="font-weight: bold;"><br>
+Software</span><br>
+</div>
+<font style="font-family: monospace;"><br>
+The latest package source code is
+available here:<br>
+<br>
+<a href="gmm-0.6.tar.gz">GMM</a> &nbsp;&nbsp;&nbsp; 0.6<br>
+<br>
+</font>
+<div style="text-align: center; font-family: monospace;"><span
+ style="font-weight: bold;"><br>
+Links</span><a href="gmm.pdf"><br>
+</a> </div>
+<font style="font-family: monospace;"><a href="gmm.pdf"><br>
+GMM White Paper</a><br>
+</font>
+<form style="font-family: monospace;"
+ action="http://www.securitydocs.com/vote.php?action=vote&amp;id=2161"
+ method="post"> <b>Rate this paper at SecurityDocs.com:</b>
+  <select name="votevalue">
+  <option value="5">5 - Perfect</option>
+  <option value="4">4 - Good</option>
+  <option value="3">3 - Average</option>
+  <option value="2">2 - Mediocre</option>
+  <option value="1">1 - Bad</option>
+  </select>
+  <input value="Rate this paper" type="submit"></form>
+<font style="font-family: monospace;"><a
+ href="http://freshmeat.net/projects/gmm/">GMM Home Page at FreshMeat</a><br>
+<a href="http://www.immunix.com/technology/compiler.php">StackGuard</a><br>
+<a href="http://www.angelfire.com/sk/stackshield/">StackShield</a><br>
+<a href="http://www.research.avayalabs.com/project/libsafe/">LibSafe</a><br>
+<br>
+<br>
+<br>
+<a style="font-weight: bold;" href="davide.html">Author
+Home Page</a><br>
+<br>
+<br>
+<br>
+</font>
+<p style="font-family: monospace;" align="left"> </p>
+</body>
+</html>

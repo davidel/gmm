@@ -1,0 +1,8 @@
+* Sun Jan 25 2004 Davide Libenzi <davidel@xmailserver.org> - 0.2
+
+	Added fault exec capability through the GMM_FAULT_EXEC environment
+	variable. Added more monitored functions.
+
+* Fri Jan 23 2004 Davide Libenzi <davidel@xmailserver.org> - 0.1
+	
+	Initial release
